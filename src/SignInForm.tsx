@@ -64,13 +64,21 @@ export function SignInForm() {
           </button>
         </div>
       </form>
-      <div className="flex items-center justify-center my-3">
-        <hr className="my-4 grow border-gray-200" />
-        <span className="mx-4 text-secondary">or</span>
-        <hr className="my-4 grow border-gray-200" />
+      <div className="flex items-center gap-3 my-4">
+        <div className="h-px bg-gray-200 grow" />
+        <span className="text-xs text-secondary uppercase">or</span>
+        <div className="h-px bg-gray-200 grow" />
       </div>
-      <button className="auth-button" onClick={() => void signIn("anonymous")}>
-        Sign in anonymously
+      <button
+        type="button"
+        className="w-full px-4 py-3 rounded border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition-colors"
+        onClick={() =>
+          void signIn("google", { redirectTo: "/" }).catch((error) => {
+            toast.error(error.message || "Google sign-in is not configured.");
+          })
+        }
+      >
+        Continue with Google
       </button>
     </div>
   );

@@ -9,8 +9,14 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as commands from "../commands.js";
 import type * as http from "../http.js";
+import type * as machines from "../machines.js";
+import type * as permissions from "../permissions.js";
 import type * as router from "../router.js";
+import type * as sensors from "../sensors.js";
+import type * as shares from "../shares.js";
+import type * as telemetry from "../telemetry.js";
 
 import type {
   ApiFromModules,
@@ -20,8 +26,14 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  commands: typeof commands;
   http: typeof http;
+  machines: typeof machines;
+  permissions: typeof permissions;
   router: typeof router;
+  sensors: typeof sensors;
+  shares: typeof shares;
+  telemetry: typeof telemetry;
 }>;
 
 /**
