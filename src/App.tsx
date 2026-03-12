@@ -4,9 +4,23 @@ import { SignOutButton } from "./SignOutButton";
 import { Toaster } from "sonner";
 import { MultiMachineDashboard } from "./MultiMachineDashboard";
 import { SignInPage } from "./SignInPage";
+import { useEffect, useState } from "react";
+import { ErrorBoundary } from "./ErrorBoundary";
 
 export default function App() {
   const { isLoading, isAuthenticated } = useConvexAuth();
+  const [isBrowserOnline, setIsBrowserOnline] = useState<boolean>(navigator.onLine);
+
+  useEffect(() => {
+    const onOnline = () => setIsBrowserOnline(true);
+    const onOffline = () => setIsBrowserOnline(false);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, []);
 
   if (isLoading) {
     return (
@@ -26,14 +40,23 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[radial-gradient(circle_at_top,#1e293b,#0b1220_60%)]">
+    <div className="min-h-screen flex flex-col">
       <header className="sticky top-0 z-10 bg-slate-950/80 backdrop-blur-md h-16 flex justify-between items-center border-b border-slate-700 px-4">
-        <h2 className="text-xl font-semibold text-cyan-300">AI Predictive Maintenance Dashboard</h2>
-        <SignOutButton />
+        <div className="flex items-center gap-3">
+          <span className={`badge ${isBrowserOnline ? "badge-accent" : "bg-amber-500/20 text-amber-200 border border-amber-400/40"}`}>
+            {isBrowserOnline ? "STREAM CONNECTED" : "RECONNECTING..."}
+          </span>
+          <h2 className="text-xl font-semibold text-cyan-300">AI Predictive Maintenance Dashboard</h2>
+        </div>
+        <div className="flex items-center gap-2">
+          <SignOutButton />
+        </div>
       </header>
-      <main className="flex-1 p-4 md:p-8">
-        <div className="w-full max-w-6xl mx-auto">
-          <Content />
+      <main className="flex-1 p-3 md:p-5">
+        <div className="w-full">
+          <ErrorBoundary>
+            <Content />
+          </ErrorBoundary>
         </div>
       </main>
       <Toaster />
@@ -54,17 +77,11 @@ function Content() {
 
   return (
     <div className="flex flex-col gap-section">
-      <div className="text-center mb-2">
-        <h1 className="text-4xl font-bold text-white mb-2">
-          Multi-Machine Monitoring Platform
-        </h1>
-        <Authenticated>
-          <p className="text-base md:text-lg text-slate-300">
-            Welcome back, {loggedInUser?.email ?? "friend"}!
-          </p>
-        </Authenticated>
-      </div>
-
+      <Authenticated>
+        <p className="text-sm text-slate-400 mb-1">
+          Control Room Session: {loggedInUser?.email ?? "user"}
+        </p>
+      </Authenticated>
       <Authenticated>
         <MultiMachineDashboard />
       </Authenticated>

@@ -57,7 +57,7 @@ export function SignInForm() {
           </span>
           <button
             type="button"
-            className="text-primary hover:text-primary-hover hover:underline font-medium cursor-pointer"
+            className="action-btn action-btn-secondary mx-auto mt-2"
             onClick={() => setFlow(flow === "signIn" ? "signUp" : "signIn")}
           >
             {flow === "signIn" ? "Sign up instead" : "Sign in instead"}
@@ -71,7 +71,7 @@ export function SignInForm() {
       </div>
       <button
         type="button"
-        className="w-full px-4 py-3 rounded border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition-colors"
+        className="action-btn action-btn-secondary w-full"
         onClick={() =>
           void signIn("google", { redirectTo: "/" }).catch((error) => {
             toast.error(error.message || "Google sign-in is not configured.");

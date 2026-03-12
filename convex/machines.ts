@@ -16,6 +16,12 @@ export const addMachine = mutation({
       location: args.location,
       deviceId: args.deviceId,
       status: "active",
+      relayState: "on",
+      automationMode: "auto",
+      lastDataReceivedAt: Date.now(),
+      signalStrength: 100,
+      batteryStatus: "N/A",
+      powerStatus: "Mains",
       createdAt: Date.now(),
     });
   },
@@ -87,6 +93,37 @@ export const updateMachine = mutation({
       status: args.status,
     });
     return args.machineId;
+  },
+});
+
+export const setAutomationMode = mutation({
+  args: {
+    machineId: v.id("machines"),
+    mode: v.union(v.literal("auto"), v.literal("manual")),
+  },
+  handler: async (ctx, args) => {
+    await requireMachineAccess(ctx, args.machineId, "editor");
+    await ctx.db.patch(args.machineId, { automationMode: args.mode });
+    return args.machineId;
+  },
+});
+
+export const updateDeviceHealth = mutation({
+  args: {
+    machineId: v.id("machines"),
+    signalStrength: v.optional(v.number()),
+    batteryStatus: v.optional(v.string()),
+    powerStatus: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requireMachineAccess(ctx, args.machineId, "editor");
+    await ctx.db.patch(args.machineId, {
+      lastDataReceivedAt: Date.now(),
+      signalStrength: args.signalStrength,
+      batteryStatus: args.batteryStatus,
+      powerStatus: args.powerStatus,
+    });
+    return true;
   },
 });
 

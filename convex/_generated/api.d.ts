@@ -13,6 +13,8 @@ import type * as commands from "../commands.js";
 import type * as http from "../http.js";
 import type * as machines from "../machines.js";
 import type * as permissions from "../permissions.js";
+import type * as reports from "../reports.js";
+import type * as reportsNode from "../reportsNode.js";
 import type * as router from "../router.js";
 import type * as sensors from "../sensors.js";
 import type * as shares from "../shares.js";
@@ -30,6 +32,8 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   machines: typeof machines;
   permissions: typeof permissions;
+  reports: typeof reports;
+  reportsNode: typeof reportsNode;
   router: typeof router;
   sensors: typeof sensors;
   shares: typeof shares;

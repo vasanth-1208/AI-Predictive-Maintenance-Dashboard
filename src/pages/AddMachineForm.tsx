@@ -25,37 +25,37 @@ export function AddMachineForm({ onSubmit, onCancel }: AddMachineFormProps) {
   };
 
   return (
-    <section className="bg-white rounded-container border border-gray-200 p-4 shadow-sm">
-      <h3 className="text-lg font-semibold text-gray-800 mb-3">Add Machine</h3>
+    <section className="panel-dark p-4">
+      <h3 className="section-title mb-3">Add Machine</h3>
       <form className="grid gap-3" onSubmit={handleSubmit}>
         <input
-          className="auth-input-field"
+          className="auth-input-field-dark"
           placeholder="Machine Name"
           value={name}
           onChange={(event) => setName(event.target.value)}
           required
         />
         <input
-          className="auth-input-field"
+          className="auth-input-field-dark"
           placeholder="Location"
           value={location}
           onChange={(event) => setLocation(event.target.value)}
           required
         />
         <input
-          className="auth-input-field"
+          className="auth-input-field-dark"
           placeholder="Device ID"
           value={deviceId}
           onChange={(event) => setDeviceId(event.target.value)}
           required
         />
         <div className="flex gap-2">
-          <button className="auth-button" type="submit" disabled={submitting}>
+          <button className="action-btn action-btn-primary" type="submit" disabled={submitting}>
             {submitting ? "Saving..." : "Save Machine"}
           </button>
           <button
             type="button"
-            className="px-4 py-3 rounded border border-gray-300 text-secondary hover:bg-gray-50"
+            className="action-btn action-btn-secondary"
             onClick={onCancel}
             disabled={submitting}
           >

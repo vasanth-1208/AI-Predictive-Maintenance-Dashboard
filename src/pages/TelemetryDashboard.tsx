@@ -10,14 +10,28 @@ type TelemetryDashboardProps = {
   machines: Machine[];
   defaultMachineId: string | null;
   convexApi: any;
+  fullPage?: boolean;
+  onBack?: () => void;
+  fixedMachineId?: string | null;
 };
+
+const RANGE_OPTIONS = [
+  { label: "Last Hour", hours: 1 },
+  { label: "Last 24 Hours", hours: 24 },
+  { label: "Last Week", hours: 24 * 7 },
+];
 
 export function TelemetryDashboard({
   machines,
   defaultMachineId,
   convexApi,
+  fullPage = false,
+  onBack,
+  fixedMachineId = null,
 }: TelemetryDashboardProps) {
-  const [machineId, setMachineId] = useState<string | null>(defaultMachineId);
+  const [machineId, setMachineId] = useState<string | null>(fixedMachineId ?? defaultMachineId);
+  const [rangeHours, setRangeHours] = useState(24);
+  const [alertLevel, setAlertLevel] = useState("ALL");
 
   useEffect(() => {
     if (!machineId && defaultMachineId) {
@@ -25,90 +39,141 @@ export function TelemetryDashboard({
     }
   }, [defaultMachineId, machineId]);
 
-  const activeMachineId = machineId ?? defaultMachineId;
-  const telemetry =
+  const activeMachineId = fixedMachineId ?? machineId ?? defaultMachineId;
+  const endTimestamp = Date.now();
+  const startTimestamp = endTimestamp - rangeHours * 60 * 60 * 1000;
+
+  const telemetryTable =
     useQuery(
-      convexApi.telemetry.getTelemetryHistory,
-      activeMachineId ? { machineId: activeMachineId, limit: 100 } : "skip",
+      convexApi.telemetry.getTelemetryTable,
+      activeMachineId
+        ? {
+            machineId: activeMachineId,
+            startTimestamp,
+            endTimestamp,
+            alertLevel,
+          }
+        : "skip",
     ) ?? [];
 
-  const grouped = useMemo(() => {
-    const byHour = new Map<string, number>();
-    for (const row of telemetry as any[]) {
-      const hour = new Date(row.timestamp).toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-      byHour.set(hour, (byHour.get(hour) ?? 0) + 1);
-    }
-    return Array.from(byHour.entries()).slice(-12);
-  }, [telemetry]);
+  const currentMachineName = useMemo(
+    () => machines.find((m) => m._id === activeMachineId)?.name ?? "-",
+    [machines, activeMachineId],
+  );
 
   return (
-    <section className="bg-slate-900 text-slate-100 rounded-container border border-slate-700 p-4 shadow-sm">
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <h3 className="text-lg font-semibold text-cyan-300">Telemetry Dashboard</h3>
-        <select
-          className="auth-input-field-dark max-w-xs"
-          value={activeMachineId ?? ""}
-          onChange={(event) => setMachineId(event.target.value || null)}
-        >
-          {machines.length === 0 ? (
-            <option value="">No Machines</option>
-          ) : (
-            machines.map((machine) => (
-              <option key={machine._id} value={machine._id}>
-                {machine.name}
-              </option>
-            ))
+    <section className={`panel-dark text-slate-100 p-4 ${fullPage ? "min-h-[78vh]" : ""}`}>
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <div className="flex items-center gap-2">
+          {fullPage && (
+            <button type="button" className="action-btn action-btn-secondary" onClick={onBack}>
+              Back to Dashboard
+            </button>
           )}
-        </select>
+          <h3 className="section-title">Telemetry Dashboard</h3>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {!fixedMachineId && (
+            <select
+              className="auth-input-field-dark max-w-xs py-2"
+              value={activeMachineId ?? ""}
+              onChange={(event) => setMachineId(event.target.value || null)}
+            >
+              {machines.length === 0 ? (
+                <option value="">No Machines</option>
+              ) : (
+                machines.map((machine) => (
+                  <option key={machine._id} value={machine._id}>
+                    {machine.name}
+                  </option>
+                ))
+              )}
+            </select>
+          )}
+          <select
+            className="auth-input-field-dark max-w-xs py-2"
+            value={rangeHours}
+            onChange={(event) => setRangeHours(Number(event.target.value))}
+          >
+            {RANGE_OPTIONS.map((opt) => (
+              <option key={opt.hours} value={opt.hours}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          <select
+            className="auth-input-field-dark max-w-xs py-2"
+            value={alertLevel}
+            onChange={(event) => setAlertLevel(event.target.value)}
+          >
+            <option value="ALL">All Alerts</option>
+            <option value="NORMAL">Normal</option>
+            <option value="EARLY">Early</option>
+            <option value="CRITICAL">Critical</option>
+            <option value="SHUTDOWN">Shutdown</option>
+          </select>
+        </div>
       </div>
 
       {!activeMachineId ? (
         <p className="text-sm text-slate-300">Add a machine to view telemetry.</p>
       ) : (
         <>
-          <div className="grid gap-2 mb-4">
-            {grouped.length === 0 ? (
-              <p className="text-sm text-slate-300">
-                No telemetry points found for this machine.
-              </p>
-            ) : (
-              grouped.map(([time, count]) => (
-                <div key={time} className="grid grid-cols-[80px_1fr_40px] gap-2 items-center">
-                  <span className="text-xs text-slate-300">{time}</span>
-                  <div className="h-2 bg-slate-700 rounded">
-                    <div
-                      className="h-2 rounded bg-cyan-400"
-                      style={{ width: `${Math.min(100, count * 10)}%` }}
-                    />
-                  </div>
-                  <span className="text-xs text-slate-200 text-right">{count}</span>
-                </div>
-              ))
-            )}
-          </div>
-
-          <div className="max-h-48 overflow-auto border border-slate-700 rounded-container">
-            <table className="w-full text-sm">
+          <p className="text-xs text-slate-400 mb-3">
+            Machine: {currentMachineName} | Range: {new Date(startTimestamp).toLocaleString()} to{" "}
+            {new Date(endTimestamp).toLocaleString()}
+          </p>
+          <div className={`${fullPage ? "max-h-[68vh]" : "max-h-80"} overflow-auto border border-slate-700 rounded-container`}>
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[980px] text-sm">
               <thead className="bg-slate-800 sticky top-0">
                 <tr>
-                  <th className="text-left px-3 py-2">Timestamp</th>
-                  <th className="text-left px-3 py-2">Sensor ID</th>
-                  <th className="text-right px-3 py-2">Value</th>
+                  <th className="text-left px-3 py-2 sticky left-0 bg-slate-800 z-10">Timestamp</th>
+                  <th className="text-left px-3 py-2">Machine ID</th>
+                  <th className="text-right px-3 py-2">Temperature</th>
+                  <th className="text-right px-3 py-2">Vibration</th>
+                  <th className="text-right px-3 py-2">Current</th>
+                  <th className="text-right px-3 py-2">MSI Score</th>
+                  <th className="text-left px-3 py-2">Status</th>
                 </tr>
               </thead>
               <tbody>
-                {(telemetry as any[]).slice(-20).reverse().map((row) => (
-                  <tr key={row._id} className="border-t border-slate-700">
-                    <td className="px-3 py-2">{new Date(row.timestamp).toLocaleString()}</td>
-                    <td className="px-3 py-2">{row.sensorId}</td>
-                    <td className="px-3 py-2 text-right">{row.value}</td>
+                {(telemetryTable as any[]).length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-3 py-3 text-slate-400">
+                      Waiting for ESP32 data... Last connection: Not detected.
+                    </td>
                   </tr>
-                ))}
+                ) : (
+                  (telemetryTable as any[]).map((row) => (
+                    <tr key={`${row.timestamp}-${row.machineId}`} className="border-t border-slate-700">
+                      <td className="px-3 py-2 sticky left-0 bg-slate-900 z-[1]">
+                        {new Date(row.timestamp).toLocaleString()}
+                      </td>
+                      <td className="px-3 py-2">{row.machineId}</td>
+                      <td className="px-3 py-2 text-right">{row.temperature ?? "N/A"}</td>
+                      <td className="px-3 py-2 text-right">{row.vibration ?? "N/A"}</td>
+                      <td className="px-3 py-2 text-right">{row.current ?? "N/A"}</td>
+                      <td className="px-3 py-2 text-right">{row.msi}</td>
+                      <td className="px-3 py-2">
+                        <span
+                          className={
+                            row.status === "CRITICAL"
+                              ? "text-rose-300"
+                              : row.status === "HIGH RISK" || row.status === "WARNING"
+                                ? "text-amber-300"
+                                : "text-emerald-300"
+                          }
+                        >
+                          {row.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
+            </div>
           </div>
         </>
       )}

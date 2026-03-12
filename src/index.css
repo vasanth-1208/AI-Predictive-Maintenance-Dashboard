@@ -3,38 +3,62 @@
 @tailwind utilities;
 
 :root {
-  --color-light: #ffffff;
-  --color-dark: #171717;
-}
-
-.accent-text {
-  @apply text-slate-600;
+  --bg-1: #050816;
+  --bg-2: #0d132b;
+  --fg-1: #e2e8f0;
 }
 
 body {
   font-family:
-    "Inter Variable",
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
+    "Poppins",
     "Segoe UI",
-    Roboto,
-    "Helvetica Neue",
-    Arial,
-    "Noto Sans",
-    sans-serif,
-    "Apple Color Emoji",
-    "Segoe UI Emoji",
-    "Segoe UI Symbol",
-    "Noto Color Emoji";
-  color: var(--color-dark);
-  background: var(--color-light);
+    sans-serif;
+  color: var(--fg-1);
+  background:
+    radial-gradient(circle at 15% 10%, #1e293b 0%, transparent 40%),
+    radial-gradient(circle at 85% 0%, #0f766e 0%, transparent 35%),
+    linear-gradient(150deg, var(--bg-1) 0%, var(--bg-2) 55%, #020617 100%);
+}
+
+.panel-dark {
+  @apply rounded-container border border-slate-700/70 bg-slate-900/70 shadow-xl backdrop-blur-sm;
+}
+
+.section-title {
+  @apply text-lg font-semibold text-cyan-300 tracking-wide;
+}
+
+.subtle-text {
+  @apply text-sm text-slate-300;
+}
+
+.badge {
+  @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold;
+}
+
+.badge-accent {
+  @apply bg-cyan-500/20 text-cyan-200 border border-cyan-400/40;
+}
+
+.action-btn {
+  @apply inline-flex items-center justify-center rounded px-3 py-2 text-sm font-semibold border transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.action-btn-primary {
+  @apply action-btn bg-cyan-600 text-white border-cyan-500 hover:bg-cyan-500;
+}
+
+.action-btn-secondary {
+  @apply action-btn bg-slate-800 text-slate-100 border-slate-600 hover:bg-slate-700;
+}
+
+.action-btn-danger {
+  @apply action-btn bg-rose-700 text-white border-rose-600 hover:bg-rose-600;
 }
 
 /* only use this to update the style of the auth input fields. use a different class for all other input fields */
 .auth-input-field {
-  @apply w-full px-4 py-3 rounded-container bg-white border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-shadow shadow-sm hover:shadow;
+  @apply w-full px-4 py-3 rounded-container bg-white border border-gray-200 text-slate-800 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 outline-none transition-shadow shadow-sm hover:shadow;
 }
 
 /* dark-surface variant for input/select controls */
@@ -65,5 +89,16 @@ input[type="number"] {
 
 /* only use this to update the style of the auth buttons. use the button class for all other buttons */
 .auth-button {
-  @apply w-full px-4 py-3 rounded bg-primary text-white font-semibold hover:bg-primary-hover transition-colors shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed;
+  @apply w-full px-4 py-3 rounded bg-cyan-600 text-white font-semibold hover:bg-cyan-500 transition-colors shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+/* keep scrolling behavior but hide scrollbar visuals */
+.scrollbar-hidden {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }

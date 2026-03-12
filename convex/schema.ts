@@ -9,6 +9,12 @@ const applicationTables = {
     location: v.string(),
     deviceId: v.string(),
     status: v.string(),
+    relayState: v.optional(v.string()),
+    automationMode: v.optional(v.string()),
+    lastDataReceivedAt: v.optional(v.number()),
+    signalStrength: v.optional(v.number()),
+    batteryStatus: v.optional(v.string()),
+    powerStatus: v.optional(v.string()),
     createdAt: v.number(),
   })
     .index("by_ownerId", ["ownerId"])
@@ -55,6 +61,14 @@ const applicationTables = {
     machineId: v.id("machines"),
     level: v.string(),
     message: v.string(),
+    createdAt: v.number(),
+  }).index("by_machine_createdAt", ["machineId", "createdAt"]),
+  notificationLogs: defineTable({
+    machineId: v.id("machines"),
+    channel: v.string(),
+    level: v.string(),
+    message: v.string(),
+    status: v.string(),
     createdAt: v.number(),
   }).index("by_machine_createdAt", ["machineId", "createdAt"]),
   deviceCommands: defineTable({
