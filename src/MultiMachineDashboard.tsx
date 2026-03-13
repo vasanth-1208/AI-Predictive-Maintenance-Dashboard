@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
 import { api } from "../convex/_generated/api";
+import { getDemoFleetOverview } from "./demoData";
 import { AddMachineForm } from "./pages/AddMachineForm";
 import { MachineDetailPage } from "./pages/MachineDetailPage";
 import { MachineListPage } from "./pages/MachineListPage";
@@ -28,7 +29,10 @@ const convexApi = api as any;
 
 export function MultiMachineDashboard() {
   const fleetOverview = useQuery(convexApi.telemetry.getFleetOverview);
-  const machines = (fleetOverview?.machines ?? []) as Machine[];
+  const effectiveFleetOverview = fleetOverview && fleetOverview.machines.length > 0
+    ? fleetOverview
+    : getDemoFleetOverview();
+  const machines = (effectiveFleetOverview.machines ?? []) as Machine[];
   const myProfile = useQuery(convexApi.machines.getMyRole);
   const addMachine = useMutation(convexApi.machines.addMachine);
 
@@ -82,22 +86,22 @@ export function MultiMachineDashboard() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <StatusCard
             label="Machines Online"
-            value={String(fleetOverview?.totals?.machinesOnline ?? 0)}
+            value={String(effectiveFleetOverview?.totals?.machinesOnline ?? 0)}
             tone="ok"
           />
           <StatusCard
             label="Active Alerts"
-            value={String(fleetOverview?.totals?.activeAlerts ?? 0)}
-            tone={(fleetOverview?.totals?.activeAlerts ?? 0) > 0 ? "danger" : "ok"}
+            value={String(effectiveFleetOverview?.totals?.activeAlerts ?? 0)}
+            tone={(effectiveFleetOverview?.totals?.activeAlerts ?? 0) > 0 ? "danger" : "ok"}
           />
           <StatusCard
             label="Avg Health Score"
-            value={`${fleetOverview?.totals?.avgHealthScore ?? 0}%`}
+            value={`${effectiveFleetOverview?.totals?.avgHealthScore ?? 0}%`}
             tone="info"
           />
           <StatusCard
             label="Data Latency"
-            value={`${fleetOverview?.totals?.dataLatency ?? 0} ms`}
+            value={`${effectiveFleetOverview?.totals?.dataLatency ?? 0} ms`}
             tone="warn"
           />
         </div>

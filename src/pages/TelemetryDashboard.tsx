@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "convex/react";
+import { getDemoTelemetryTable, isDemoMachineId } from "../demoData";
 
 type Machine = {
   _id: string;
@@ -42,11 +43,11 @@ export function TelemetryDashboard({
   const activeMachineId = fixedMachineId ?? machineId ?? defaultMachineId;
   const endTimestamp = Date.now();
   const startTimestamp = endTimestamp - rangeHours * 60 * 60 * 1000;
-
-  const telemetryTable =
+  const demoMode = isDemoMachineId(activeMachineId);
+  const rawTelemetryTable =
     useQuery(
       convexApi.telemetry.getTelemetryTable,
-      activeMachineId
+      !demoMode && activeMachineId
         ? {
             machineId: activeMachineId,
             startTimestamp,
@@ -55,6 +56,10 @@ export function TelemetryDashboard({
           }
         : "skip",
     ) ?? [];
+
+  const telemetryTable = demoMode && activeMachineId
+    ? getDemoTelemetryTable(activeMachineId, alertLevel)
+    : rawTelemetryTable;
 
   const currentMachineName = useMemo(
     () => machines.find((m) => m._id === activeMachineId)?.name ?? "-",

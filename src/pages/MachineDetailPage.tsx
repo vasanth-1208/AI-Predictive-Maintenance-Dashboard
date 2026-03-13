@@ -1,6 +1,17 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
+import {
+  getDemoAlerts,
+  getDemoCommands,
+  getDemoHealthTimeline,
+  getDemoLatestTelemetry,
+  getDemoMachine,
+  getDemoSensors,
+  getDemoShares,
+  getDemoTelemetryHistory,
+  isDemoMachineId,
+} from "../demoData";
 
 type MachineDetailPageProps = {
   machineId: string;
@@ -30,18 +41,41 @@ export function MachineDetailPage({
   convexApi,
   onOpenTelemetryView,
 }: MachineDetailPageProps) {
-  const machine = useQuery(convexApi.machines.getMachineById, { machineId });
+  const demoMode = isDemoMachineId(machineId);
+  const rawMachine = useQuery(
+    convexApi.machines.getMachineById,
+    demoMode ? "skip" : { machineId },
+  );
   const loggedInUser = useQuery(convexApi.auth.loggedInUser);
-  const sensors = useQuery(convexApi.sensors.listSensorsByMachine, { machineId }) ?? [];
-  const latestTelemetry = useQuery(convexApi.telemetry.getLatestTelemetry, { machineId });
-  const telemetryHistory =
-    useQuery(convexApi.telemetry.getTelemetryHistory, { machineId, limit: 60 }) ?? [];
-  const shares = useQuery(convexApi.shares.listMachineShares, { machineId }) ?? [];
-  const recentAlerts = useQuery(convexApi.telemetry.getRecentAlerts, { machineId, limit: 20 }) ?? [];
-  const recentCommands = useQuery(convexApi.commands.getRecentCommands, { machineId, limit: 20 }) ?? [];
+  const rawSensors = useQuery(
+    convexApi.sensors.listSensorsByMachine,
+    demoMode ? "skip" : { machineId },
+  ) ?? [];
+  const rawLatestTelemetry = useQuery(
+    convexApi.telemetry.getLatestTelemetry,
+    demoMode ? "skip" : { machineId },
+  );
+  const rawTelemetryHistory = useQuery(
+    convexApi.telemetry.getTelemetryHistory,
+    demoMode ? "skip" : { machineId, limit: 60 },
+  ) ?? [];
+  const rawShares = useQuery(
+    convexApi.shares.listMachineShares,
+    demoMode ? "skip" : { machineId },
+  ) ?? [];
+  const rawRecentAlerts = useQuery(
+    convexApi.telemetry.getRecentAlerts,
+    demoMode ? "skip" : { machineId, limit: 20 },
+  ) ?? [];
+  const rawRecentCommands = useQuery(
+    convexApi.commands.getRecentCommands,
+    demoMode ? "skip" : { machineId, limit: 20 },
+  ) ?? [];
   const [timelineRangeHours, setTimelineRangeHours] = useState(24);
-  const healthTimeline =
-    useQuery(convexApi.telemetry.getHealthTimeline, { machineId, rangeHours: timelineRangeHours }) ?? [];
+  const rawHealthTimeline = useQuery(
+    convexApi.telemetry.getHealthTimeline,
+    demoMode ? "skip" : { machineId, rangeHours: timelineRangeHours },
+  ) ?? [];
 
   const addSensor = useMutation(convexApi.sensors.addSensor);
   const updateSensor = useMutation(convexApi.sensors.updateSensor);
@@ -95,21 +129,30 @@ export function MachineDetailPage({
 
   const startTimestamp = reportFrom ? new Date(reportFrom).getTime() : NaN;
   const endTimestamp = reportTo ? new Date(reportTo).getTime() : NaN;
-  const telemetryRange =
-    useQuery(
-      convexApi.telemetry.getTelemetryByRange,
+  const rawTelemetryRange = useQuery(
+    convexApi.telemetry.getTelemetryByRange,
+    !demoMode &&
       activeView === "monitor" &&
-        Number.isFinite(startTimestamp) &&
-        Number.isFinite(endTimestamp) &&
-        startTimestamp <= endTimestamp
-        ? {
-            machineId,
-            startTimestamp,
-            endTimestamp,
-            limit: 1500,
-          }
-        : "skip",
-    ) ?? [];
+      Number.isFinite(startTimestamp) &&
+      Number.isFinite(endTimestamp) &&
+      startTimestamp <= endTimestamp
+      ? {
+          machineId,
+          startTimestamp,
+          endTimestamp,
+          limit: 1500,
+        }
+      : "skip",
+  ) ?? [];
+  const machine = demoMode ? getDemoMachine(machineId) : rawMachine;
+  const sensors = demoMode ? getDemoSensors() : rawSensors;
+  const latestTelemetry = demoMode ? getDemoLatestTelemetry(machineId) : rawLatestTelemetry;
+  const telemetryHistory = demoMode ? getDemoTelemetryHistory(machineId) : rawTelemetryHistory;
+  const shares = demoMode ? getDemoShares() : rawShares;
+  const recentAlerts = demoMode ? getDemoAlerts(machineId) : rawRecentAlerts;
+  const recentCommands = demoMode ? getDemoCommands(machineId) : rawRecentCommands;
+  const healthTimeline = demoMode ? getDemoHealthTimeline(machineId) : rawHealthTimeline;
+  const telemetryRange = demoMode ? telemetryHistory : rawTelemetryRange;
 
   useEffect(() => {
     if (!machine) return;
@@ -120,9 +163,13 @@ export function MachineDetailPage({
   }, [machine?._id, machine?.name, machine?.location, machine?.deviceId, machine?.status]);
 
   useEffect(() => {
+    if (demoMode) {
+      setReportEmail("adminapmd@gmail.com");
+      return;
+    }
     if (!loggedInUser?.email) return;
     setReportEmail((prev) => prev || loggedInUser.email || "");
-  }, [loggedInUser?.email]);
+  }, [demoMode, loggedInUser?.email]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNowTs(Date.now()), 5000);
@@ -220,6 +267,10 @@ export function MachineDetailPage({
 
   const handleAddSensor = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (demoMode) {
+      toast.success("Demo mode: sample sensor values are already loaded.");
+      return;
+    }
     setSavingSensor(true);
     try {
       const normalizedType = sensorType.trim().toLowerCase();
@@ -259,6 +310,10 @@ export function MachineDetailPage({
   const handleCommand = async (
     command: "beep_short" | "beep_long" | "relay_off" | "relay_on",
   ) => {
+    if (demoMode) {
+      toast.success(`Demo command simulated: ${command}`);
+      return;
+    }
     try {
       if (command === "relay_off") {
         const confirmed = window.confirm("Are you sure you want to turn OFF the relay?");
@@ -272,6 +327,10 @@ export function MachineDetailPage({
   };
 
   const handleAutomationModeChange = async (mode: "auto" | "manual") => {
+    if (demoMode) {
+      toast.success(`Demo mode switched to ${toTitleCase(mode)}.`);
+      return;
+    }
     try {
       await setAutomationMode({ machineId, mode });
       toast.success(`Mode switched to ${toTitleCase(mode)}.`);
@@ -282,6 +341,10 @@ export function MachineDetailPage({
 
   const handleShare = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (demoMode) {
+      toast.success("Demo share simulated.");
+      return;
+    }
     setSharing(true);
     try {
       await shareMachine({
@@ -304,6 +367,11 @@ export function MachineDetailPage({
   };
 
   const saveManagedAccess = async (share: any) => {
+    if (demoMode) {
+      toast.success("Demo access updated.");
+      setManagingShareId(null);
+      return;
+    }
     try {
       await shareMachine({
         machineId,
@@ -328,6 +396,11 @@ export function MachineDetailPage({
 
   const saveEditSensor = async () => {
     if (!editingSensorId) return;
+    if (demoMode) {
+      toast.success("Demo sensor update simulated.");
+      setEditingSensorId(null);
+      return;
+    }
     try {
       await updateSensor({
         sensorId: editingSensorId,
@@ -345,6 +418,10 @@ export function MachineDetailPage({
   };
 
   const handleDeleteSensor = async (sensorId: string) => {
+    if (demoMode) {
+      toast.success("Demo sensor delete simulated.");
+      return;
+    }
     const confirmed = window.confirm("Delete this sensor and all its telemetry?");
     if (!confirmed) return;
     try {
@@ -356,6 +433,11 @@ export function MachineDetailPage({
   };
 
   const handleUpdateMachine = async () => {
+    if (demoMode) {
+      setIsEditingMachine(false);
+      toast.success("Demo machine update simulated.");
+      return;
+    }
     try {
       await updateMachine({
         machineId,
@@ -381,6 +463,10 @@ export function MachineDetailPage({
   };
 
   const handleDeleteMachine = async () => {
+    if (demoMode) {
+      toast.success("Demo machine delete blocked.");
+      return;
+    }
     const confirmed = window.confirm(
       "Delete this machine and all linked sensors/telemetry/alerts/commands?",
     );
@@ -394,6 +480,10 @@ export function MachineDetailPage({
   };
 
   const handleRemoveShare = async (shareId: string) => {
+    if (demoMode) {
+      toast.success("Demo shared access removed.");
+      return;
+    }
     const confirmed = window.confirm("Remove access for this shared user?");
     if (!confirmed) return;
     try {
@@ -405,6 +495,10 @@ export function MachineDetailPage({
   };
 
   const handleDownloadPdf = async () => {
+    if (demoMode) {
+      toast.success("Demo PDF download simulated.");
+      return;
+    }
     try {
       if (!Number.isFinite(startTimestamp) || !Number.isFinite(endTimestamp) || startTimestamp > endTimestamp) {
         toast.error("Please choose a valid date/time range.");
@@ -439,6 +533,15 @@ export function MachineDetailPage({
   };
 
   const handleSendEmail = async () => {
+    if (demoMode) {
+      if (!reportEmail.trim()) {
+        toast.error("Recipient email is required.");
+        return;
+      }
+      setEmailStatus(`Demo email sent to ${reportEmail.trim()}`);
+      toast.success("Demo email sent successfully.");
+      return;
+    }
     if (!reportEmail.trim()) {
       toast.error("Recipient email is required.");
       return;
